@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #login-container {
+            background: #ffffff;
+            border: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            width: 340px;
+            box-sizing: border-box;
+        }
+        label {
+            font-weight: 500;
+            margin-bottom: 10px;
+            display: block;
+        }
+        input[type="text"] {
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 0;
+            margin-top: 20px;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        button:hover {
+            background-color: green;
+        }
+        .dark-mode button:hover {
+            background-color: green;
+        }
+        /* Dark Mode Switch */
+        #theme-switch-container {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+        }
+        .theme-switch-label {
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            background: grey;
+            border-radius: 100px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            overflow: hidden;
+        }
+        .theme-switch-label .fas {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+            transition: opacity 0.3s;
+        }
+        .theme-switch-label .fa-sun {
+            left: 8px;
+        }
+        .theme-switch-label .fa-moon {
+            right: 8px;
+            opacity: 0;
+        }
+        .theme-switch:checked + .theme-switch-label .fa-sun {
+            opacity: 0;
+        }
+        .theme-switch:checked + .theme-switch-label .fa-moon {
+            opacity: 1;
+        }
+        .theme-switch-label .ball {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+            z-index: 1;
+        }
+        .theme-switch:checked + .theme-switch-label .ball {
+            transform: translateX(26px);
+        }
+        .theme-switch {
+            display: none;
+        }
+        .dark-mode .theme-switch-label .fa-moon {
+            color: #0055A5; /* Example: A gold color for better visibility against dark background */
+        }
+
+        .theme-switch-label .fa-sun {
+            color: #FFD700; /* Example: A gold color for better visibility against dark background */
+        }
+        .dark-mode {
+            --background-main: #121212; /* Dark background for main body */
+            --text-color-general: #ddd; /* Light text for better readability in dark mode */
+            --background-container: #333333; /* Dark background for containers */
+            --background-button: #316FC0; /* Dark background for buttons */
+            --text-button: #ddd; /* Light text for buttons in dark mode */
+        }
+
+        body.dark-mode {
+            background-color: var(--background-main);
+            color: var(--text-color-general);
+        }
+
+        body.dark-mode #login-container {
+            background: var(--background-container);
+        }
+
+        body.dark-mode button {
+            background-color: var(--background-button);
+            color: var(--text-button);
+        }
+    </style>
+</head>
+<body>
+    <div id="theme-switch-container">
+        <input type="checkbox" id="theme-switch" class="theme-switch" />
+        <label for="theme-switch" class="theme-switch-label">
+            <i class="fas fa-sun"></i>
+            <i class="fas fa-moon"></i>
+            <div class="ball"></div>
+        </label>
+    </div>
+    <div id="login-container">
+        <form action="" method="post">
+            <label for="user">User Name:</label>
+            <input type="text" id="user" name="user" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('theme-switch').addEventListener('change', function() {
+            document.body.classList.toggle('dark-mode'); // Toggle dark mode class
+            localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
+        });
+
+        // Check local storage for dark mode preference on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            var darkModeSwitch = document.getElementById('theme-switch');
+            var body = document.body;
+
+            // Read the current dark mode setting from localStorage and apply it
+            var isDarkModeStored = localStorage.getItem('darkMode') === 'true'; // Correctly interpret the string as boolean
+            body.classList.toggle('dark-mode', isDarkModeStored); // Apply dark mode based on stored value
+            darkModeSwitch.checked = isDarkModeStored; // Set the switch position based on stored value
+
+            console.log('Dark mode initial state:', isDarkModeStored); // Debug log
+
+            // Toggle dark mode when the switch is changed
+            darkModeSwitch.addEventListener('change', function() {
+                var isDarkModeNow = darkModeSwitch.checked; // Check the current position of the toggle switch
+                body.classList.toggle('dark-mode', isDarkModeNow); // Apply or remove the dark-mode class based on the toggle position
+                localStorage.setItem('darkMode', isDarkModeNow); // Save the new state to localStorage
+
+                console.log('Dark mode toggled to:', isDarkModeNow); // Debug log
+            });
+        });
+
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html>
+    <title>Chat</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    :root {
+        --background-main: #f7f7f7;
+        --background-container: white;
+        --background-message-outgoing: #0078D7;
+        --background-message-incoming: #f7f7f7;
+        --background-message: #e8e8e8;
+        --background-timestamp: transparent;
+
+        --text-color-general: #555;
+        --text-color-timestamp: #666;
+
+        --border-radius-small: 5px;
+        --border-radius-message: 12px;
+        --border-color: #ccc;
+
+        --font-family-main: 'Arial', sans-serif;
+    }
+    .dark-mode {
+        /* Dark mode variables */
+        --background-main: #121212;
+        --background-container: #333333;
+        --background-message-outgoing: #005c99;
+        --background-message-incoming: #242424;
+        --text-color-general: #ddd;
+        --text-color-timestamp: #ccc;
+        --border-color: #666;
+        background-color: var(--background-main);
+        color: var(--text-color-general);
+    }
+    /* Dark Mode Switch */
+    #theme-switch-container {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 100;
+    }
+    /* Base styles for the switch label */
+    .theme-switch-label {
+        display: inline-block;
+        width: 60px; /* Width of the entire switch */
+        height: 34px; /* Height of the entire switch */
+        background: grey;
+        border-radius: 100px; /* This gives it a pill shape */
+        position: relative;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        overflow: hidden; /* This prevents the ball from spilling outside the switch */
+    }
+    /* Styles for the icons in the switch label */
+    .theme-switch-label .fas {
+        position: absolute;
+        top: 50%; /* Center vertically */
+        transform: translateY(-50%);
+        z-index: 2; /* Place above the switch background */
+        transition: opacity 0.3s;
+    }
+    /* Specific positions for each icon */
+    .theme-switch-label .fa-sun {
+        left: 8px; /* Sun icon on the left side */
+    }
+    .theme-switch-label .fa-moon {
+        right: 8px; /* Moon icon on the right side */
+        opacity: 0; /* Initially hidden */
+    }
+    /* Change the icon opacity when the switch is checked */
+    .theme-switch:checked + .theme-switch-label .fa-sun {
+        opacity: 0; /* Hide the sun icon */
+    }
+    .theme-switch:checked + .theme-switch-label .fa-moon {
+        opacity: 1; /* Show the moon icon */
+    }
+    /* Styles for the ball */
+    .theme-switch-label .ball {
+        position: absolute;
+        top: 50%;
+        left: 2px; /* Initial position on the left, matching the padding of the switch */
+        width: 30px; /* Diameter of the ball */
+        height: 30px; /* Diameter of the ball */
+        background-color: white;
+        border-radius: 50%;
+        transition: transform 0.3s ease; /* Animate the transform property */
+        z-index: 1; /* Ensure it's above the switch background but below the icons */
+        transform: translateY(-50%);
+    }
+    .theme-switch {
+        display: none; /* Hide the default checkbox */
+    }
+    /* Move the ball to the right when the theme-switch is checked */
+    .theme-switch:checked + .theme-switch-label .ball {
+        transform: translateY(-50%) translateX(26px); /* Adjust this value if the ball does not land perfectly on the other side */
+    }
+    /* Update for online users box visibility */
+    .dark-mode #online-users-container {
+        background: var(--background-container);
+        color: var(--text-color-general);
+    }
+    /* Dark mode styles for messages */
+    .dark-mode .message {
+        background-color: #005c99; /* Dark blue for message background */
+        color: #ffffff; /* White text for messages */
+    }
+    /* Dark mode styles for links */
+    .dark-mode a {
+        color: #aec7ff; /* Lighter blue for links for visibility */
+    }
+    /* Update internal chat container and entry boxes for dark mode */
+    .dark-mode #controls input,
+    .dark-mode #controls button,
+    .dark-mode #online-users-container {
+        background: var(--background-container);
+        color: var(--text-color-general);
+        border-color: var(--border-color);
+    }
+    /* Dark mode styles for outgoing messages */
+    .dark-mode .message.mine {
+        background-color: #0078D7; /* Specific blue for outgoing messages */
+        color: #ffffff; /* White text for visibility */
+    }
+    .dark-mode .message.theirs {
+        background-color: #151515; /* Specific blue for outgoing messages */
+        color: #ffffff; /* White text for visibility */
+    }
+    /* Dark mode styles for input fields */
+    .dark-mode input,
+    .dark-mode button {
+        background-color: #333333; /* Dark grey for input fields */
+        color: #ffffff; /* White text for input fields */
+        border: 1px solid #555555; /* Slightly lighter border for visibility */
+    }
+    .dark-mode #chat-container {
+        background-color: var(--background-container);  // Make sure this uses the dark mode variable
+        color: var(--text-color-general);
+    }
+    .dark-mode .theme-switch-label .fa-moon {
+        color: #0055A5; /* Example: A gold color for better visibility against dark background */
+    }
+    .theme-switch-label .fa-sun {
+        color: #FFD700; /* Example: A gold color for better visibility against dark background */
+    }
+    body {
+        font-family: var(--font-family-main);
+        background-color: var(--background-main);
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        color: var(--text-color-general);
+        transition: background-color 0.2s, color 0.2s;
+    }
+    #chat-container {
+        background: var(--background-container);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-small);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        margin: auto;
+        max-width: 500px;
+        height: 70%;
+    }
+    #logout {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+        background-color: #0056b3;
+        border: none;
+        padding: 10px;
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        transition: background-color 0.3s;
+    }
+    #out {
+        flex: 1;
+        overflow-y: scroll;
+        padding: 5px;
+        background: var(--background-message);
+        border-radius: var(--border-radius-small);
+        margin-bottom: 10px;
+    }
+    .dark-mode #out {
+        background: var(--background-message-incoming);
+    }
+    #today-header {
+        text-align: center;
+        font-size: 1.2em;
+        color: var(--text-color-general);
+        margin-bottom: 10px;
+    }
+    #online-users-container {
+        position: fixed;
+        right: 10px;
+        bottom: 10px;
+        width: 200px;
+        background: var(--background-container);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-small);
+        padding: 15px;
+        height: 300px;
+        overflow-y: auto;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    #online-users-list li {
+        padding-left: 0;
+        padding: 1px;
+        margin: 1px;
+        background: var(--background-message-incoming);
+        border-radius: var(--border-radius-small);
+        text-align: center;
+        list-style: none;
+    }
+    #online-users-list li::before {
+        content: '• '; /* Unicode character for a bullet point */
+        color: green; /* Green color for the bullet point */
+        font-size: 3em; /* Make the bullet point larger */
+        margin-right: 5px; /* Spacing between bullet point and text */
+        vertical-align: middle; /* Aligns the bullet correctly with the text */
+        margin-bottom: 10px;
+        padding-left: 0;
+    }
+    #online-users-list li:not(:last-child) {
+        border-bottom: 1px solid var(--border-color);
+    }
+    #fileInputLabel {
+        cursor: pointer;
+        padding: 10px;
+        font-size: 24px; /* Adjust size as needed */
+        color: #555; /* Adjust color as needed */
+    }
+    #fileInputLabel .fa-paperclip {
+        color: #000000;
+        margin-right: 10px
+    }
+    #upload-status {
+        text-align: center;
+        padding-bottom: 10px; /* Adds 10px of padding to the bottom */
+    }
+    .dark-mode #fileInputLabel .fa-paperclip {
+        color: #FFFFFF;
+        margin-right: 10px
+    }
+    .message {
+        padding: 8px 12px;
+        border-radius: var(--border-radius-message);
+        margin: 5px 10px;
+        background: var(--background-message-incoming);
+        width: fit-content;
+        max-width: 80%;
+    }
+    .message-container {
+        display: flex;
+        flex-direction: column;
+    }
+    .timestamp {
+        font-size: 0.75em;
+        color: var(--text-color-timestamp);
+    }
+    .mine {
+        align-self: flex-end;
+        background: var(--background-message-outgoing);
+        color: #ddd;
+    }
+    .mine-timestamp {
+        background-color: var(--background-timestamp);
+        align-self: flex-end;
+        text-align: right;
+        width: 100%;
+        font-size: 0.75em;
+        color: var(--text-color-timestamp);
+    }
+    .theirs {
+        align-self: flex-start;
+        background: var(--background-message-incoming);
+    }
+    .theirs-timestamp {
+        background-color: var(--background-timestamp);
+        align-self: flex-start;
+        text-align: left;
+        width: 100%;
+        font-size: 0.75em;
+        color: var(--text-color-timestamp);
+    }
+    input, button {
+        padding: 10px;
+        border-radius: var(--border-radius-small);
+        border: 1px solid #ddd;
+    }
+    input {
+        flex: 1;
+        margin-right: 10px;
+    }
+    button {
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+    #controls {
+        display: flex;
+    }
+    #logout:hover {
+        background-color: red;
+    }
+    button:hover {
+        background-color: #0096FF;
+
+    }
+    .dark-mode #controls button:hover {
+        background-color: #316FC0 ;
+
+    }
+    a {
+        color: #aec7ff; /* Lighter blue for links for visibility */
+    }
+</style>
+
+</head>
+<body>
+    <div id="theme-switch-container">
+        <input type="checkbox" id="theme-switch" class="theme-switch" />
+        <label for="theme-switch" class="theme-switch-label">
+            <i class="fas fa-sun"></i>
+            <i class="fas fa-moon"></i>
+            <div class="ball"></div>
+        </label>
+    </div>
+    <div id="chat-container">
+        <button id="logout" onclick="window.location.href='/logout'">Logout</button>
+        <p><b>Hi, {{ user }}!</b></p>
+        <div id="out"></div>
+        <div id="upload-status" style="color: green; text-align: center;"></div> <!-- Upload status display -->
+        <div id="controls">
+            <input id="to" placeholder="Recipient username" />
+            <input id="in" type="text" placeholder="Type a message..." />
+            <label for="fileInput" id="fileInputLabel"><i class="fa fa-paperclip" aria-hidden="true"></i></label>
+            <input type="file" id="fileInput" style="display: none;" />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    <div id="online-users-container">
+        <h3>Online Users</h3>
+        <ul id="online-users-list"></ul>
+    </div>
+
+    <script>
+
+        function fetchOnlineUsers() {
+            var currentUser = "{{ user }}"; // Assuming Flask templating correctly replaces this
+            $.getJSON('/online-users', {user: currentUser}, function(users) {
+                var userList = $('#online-users-list');
+                userList.empty(); // Clear the list before updating
+                users.forEach(function(user) {
+                    userList.append($('<li>').text(user));
+                });
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("Failed to fetch online users:", textStatus, errorThrown);  // Log AJAX errors to console
+            });
+        }
+
+        setInterval(fetchOnlineUsers, 1000);  // Update every 5 seconds
+        fetchOnlineUsers();  // Initial fetch when page loads
+
+        function markMessageAsRead(messageId) {
+            $.post('/mark-read', {message_id: messageId}, function() {
+                console.log("Message marked as read:", messageId);
+                // Update UI to show read receipt
+            });
+        }
+
+        function sse() {
+            // Listening to chat messages
+            var chatSource = new EventSource('/stream', {withCredentials: true});
+            chatSource.onmessage = function(e) {
+                var messageData = JSON.parse(e.data);
+                var messageContainer = document.createElement('div');
+                messageContainer.className = 'message-container';
+
+                var div = document.createElement('div');
+                if (messageData.file) {
+                    var link = document.createElement('a');
+                    link.href = `/uploads/${messageData.file}`;
+                    link.textContent = 'View File: ' + messageData.file;
+                    link.target = '_blank';
+                    div.appendChild(link);
+                    div.className = 'message theirs file';
+                } else {
+                    div.textContent = messageData.message;
+                    div.className = 'message theirs';
+                }
+                messageContainer.appendChild(div);
+
+                var timestamp = document.createElement('div');
+                timestamp.textContent = messageData.username + ' - ' + getCurrentTime();
+                timestamp.className = 'theirs-timestamp';
+                messageContainer.appendChild(timestamp);
+
+                var out = document.getElementById('out');
+                out.appendChild(messageContainer);
+                out.scrollTop = out.scrollHeight;
+            };
+
+            // Listening to file upload status
+            var fileSource = new EventSource('/file-stream');
+            fileSource.onmessage = function(e) {
+                var fileData = JSON.parse(e.data);
+
+            };
+        }
+
+        function checkRecipientOnline(to, callback) {
+            $.getJSON(`/is-online/${to}`, function(response) {
+                if (response.is_online) {
+                    callback();  // Execute callback if the user is online
+                } else {
+                    document.getElementById('upload-status').textContent = "Recipient Not Online";
+                    document.getElementById('upload-status').style.color = 'orange';
+                    setTimeout(function() {
+                        document.getElementById('upload-status').textContent = '';
+                    }, 5000);
+                }
+            }).fail(function() {
+                document.getElementById('upload-status').textContent = "Failed to check recipient status";
+                document.getElementById('upload-status').style.color = 'red';
+                setTimeout(function() {
+                    document.getElementById('upload-status').textContent = '';
+                }, 5000);
+            });
+        }
+
+        function sendMessage() {
+            var message = document.getElementById('in').value;
+            var to = document.getElementById('to').value;
+
+            if (!to) {
+                // Ensure both recipient and message are specified
+                document.getElementById('upload-status').textContent = "Recipient Not Specified";
+                document.getElementById('upload-status').style.color = 'red';
+                setTimeout(function() {
+                    document.getElementById('upload-status').textContent = '';
+                }, 5000);
+                return;
+            }
+
+            if (!message.trim()) {
+                // Ensure both recipient and message are specified
+                document.getElementById('upload-status').textContent = "Message Not Specified";
+                document.getElementById('upload-status').style.color = 'red';
+                setTimeout(function() {
+                    document.getElementById('upload-status').textContent = '';
+                }, 5000);
+                return;
+            }
+
+            checkRecipientOnline(to, function() {
+                var formData = new FormData();
+                formData.append('to', to);
+                formData.append('message', message);
+
+                $.ajax({
+                    url: '/post',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        document.getElementById('in').value = ''; // Clear input after successful send
+                        updateChatUI({user: '{{ user }}', timestamp: getCurrentTime()}, message, true); // Update chat UI on success
+                    },
+                    error: function(xhr) {
+                        var errorResponse = JSON.parse(xhr.responseText);
+                        document.getElementById('upload-status').textContent = errorResponse.error;
+                        document.getElementById('upload-status').style.color = 'red';
+                        setTimeout(function() {
+                            document.getElementById('upload-status').textContent = '';
+                        }, 5000);
+                    }
+                });
+            });
+        }
+
+        function uploadFile() {
+            var fileInput = document.getElementById('fileInput');
+            var to = document.getElementById('to').value;
+
+            if (!to) {
+                document.getElementById('upload-status').textContent = "Recipient Not Specified";
+                document.getElementById('upload-status').style.color = 'red';
+                setTimeout(() => document.getElementById('upload-status').textContent = '', 5000);
+                return;
+            }
+
+            if (fileInput.files.length === 0) {
+                document.getElementById('upload-status').textContent = "File Not Specified";
+                document.getElementById('upload-status').style.color = 'red';
+                setTimeout(() => document.getElementById('upload-status').textContent = '', 5000);
+                return;
+            }
+
+            checkRecipientOnline(to, function() {
+                var formData = new FormData();
+                formData.append('to', to);
+                formData.append('file', fileInput.files[0]);
+
+                $.ajax({
+                    url: '/post',
+                    type: 'POST',
+                    data: formData,
+                    processData: false, // Ensure the data is sent as FormData
+                    contentType: false, // Let jQuery set the correct contentType
+                    success: function(response) {
+                        document.getElementById('upload-status').textContent = "File sent successfully";
+                        document.getElementById('upload-status').style.color = 'green';
+                        setTimeout(() => document.getElementById('upload-status').textContent = '', 5000);
+                        updateChatUI({filename: response.filename}, '', true);
+                    },
+                    error: function(xhr) {
+                        var errorResponse = JSON.parse(xhr.responseText);
+                        document.getElementById('upload-status').textContent = errorResponse.error;
+                        document.getElementById('upload-status').style.color = 'red';
+                        setTimeout(() => document.getElementById('upload-status').textContent = '', 5000);
+                    }
+                });
+            });
+        }
+
+        function updateChatUI(data, message, isMine) {
+            var messageContainer = document.createElement('div');
+            messageContainer.className = 'message-container';
+
+            var div = document.createElement('div');
+            if (data.filename) {
+                var link = document.createElement('a');
+                link.href = `/uploads/${data.filename}`;
+                link.textContent = 'View File: ' + data.filename;
+                link.target = '_blank';
+                div.appendChild(link);
+                div.className = isMine ? 'message mine file' : 'message theirs file';
+            } else {
+                div.textContent = message;
+                div.className = isMine ? 'message mine' : 'message theirs';
+            }
+            messageContainer.appendChild(div);
+
+            var timestamp = document.createElement('div');
+            timestamp.textContent = getCurrentTime();
+            timestamp.className = isMine ? 'mine-timestamp' : 'theirs-timestamp';
+            messageContainer.appendChild(timestamp);
+
+            var out = document.getElementById('out');
+            out.appendChild(messageContainer);
+            out.scrollTop = out.scrollHeight;
+        }
+
+        document.getElementById('fileInput').addEventListener('change', function() {
+            uploadFile(() => {
+                this.value = ''; // Reset file input only after upload is handled
+            });
+        });
+
+
+        document.getElementById('theme-switch').addEventListener('change', function() {
+            var body = document.body;
+            body.classList.toggle('dark-mode');  // Toggle dark mode class
+            localStorage.setItem('darkMode', body.classList.contains('dark-mode'));
+        });
+
+        // Check local storage for dark mode preference on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            var darkModeSwitch = document.getElementById('theme-switch');
+            var body = document.body;
+
+            // Read the current dark mode setting from localStorage and apply it
+            var isDarkModeStored = localStorage.getItem('darkMode') === 'true'; // Correctly interpret the string as boolean
+            body.classList.toggle('dark-mode', isDarkModeStored); // Apply dark mode based on stored value
+            darkModeSwitch.checked = isDarkModeStored; // Set the switch position based on stored value
+
+            console.log('Dark mode initial state:', isDarkModeStored); // Debug log
+
+            // Toggle dark mode when the switch is changed
+            darkModeSwitch.addEventListener('change', function() {
+                var isDarkModeNow = darkModeSwitch.checked; // Check the current position of the toggle switch
+                body.classList.toggle('dark-mode', isDarkModeNow); // Apply or remove the dark-mode class based on the toggle position
+                localStorage.setItem('darkMode', isDarkModeNow); // Save the new state to localStorage
+
+                console.log('Dark mode toggled to:', isDarkModeNow); // Debug log
+            });
+        });
+
+        function getCurrentTime() {
+            const now = new Date();
+            let hours = now.getHours();
+            let minutes = now.getMinutes().toString().padStart(2, '0');
+            let ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; // the hour '0' should be '12'
+            return hours + ':' + minutes + ' ' + ampm;
+        }
+
+        $('#in').keyup(function(e) {
+            if (e.keyCode == 13) {
+                sendMessage();
+            }
+        });
+
+        sse();
+    </script>
+</body>
+</html>
